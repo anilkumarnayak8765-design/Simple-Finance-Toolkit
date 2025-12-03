@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Finance Calculator</title>
+
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{
+      --bg:#050816;
+      --bg-card:#0f172a;
+      --accent:#22c55e;
+      --accent-soft:rgba(34,197,94,.15);
+      --accent-danger:#f97373;
+      --text:#e5e7eb;
+      --muted:#9ca3af;
+      --border:#1f2937;
+      --radius-lg:16px;
+      --radius-md:10px;
+      --shadow-soft:0 20px 40px rgba(15,23,42,.5);
+      --transition-fast:.2s ease
+    }
+    body{
+      min-height:100vh;
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background:radial-gradient(circle at top,#1e293b 0,#020617 55%);
+      color:var(--text);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:16px
+    }
+    .app-wrapper{width:100%;max-width:520px}
+    .calculator-card{
+      background:linear-gradient(135deg,#020617 0%,#0b1120 50%,#020617 100%);
+      border-radius:var(--radius-lg);
+      box-shadow:var(--shadow-soft);
+      padding:20px 18px 18px;
+      border:1px solid rgba(148,163,184,.2);
+      position:relative;
+      overflow:hidden
+    }
+    .calculator-card:before{
+      content:"";
+      position:absolute;
+      inset:-40%;
+      background:radial-gradient(circle at top,rgba(34,197,94,.16),transparent 60%);
+      opacity:.7;
+      pointer-events:none;
+      z-index:0
+    }
+    .card-inner{position:relative;z-index:1}
+    .card-header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:14px
+    }
+    .title-group{display:flex;flex-direction:column;gap:2px}
+    .title{
+      font-size:1.3rem;
+      font-weight:650;
+      letter-spacing:.02em;
+      display:inline-flex;
+      align-items:center;
+      gap:6px
+    }
+    .title span.highlight{color:var(--accent)}
+    .subtitle{font-size:.8rem;color:var(--muted)}
+    .pill{
+      font-size:.7rem;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,.5);
+      color:var(--muted);
+      background:rgba(15,23,42,.85);
+      backdrop-filter:blur(10px);
+      white-space:nowrap
+    }
+
+    /* mode tabs */
+    .mode-tabs{
+      display:flex;
+      gap:6px;
+      margin-bottom:10px;
+      padding:4px;
+      border-radius:999px;
+      background:rgba(15,23,42,.8);
+      border:1px solid rgba(148,163,184,.3)
+    }
+    .mode-tab{
+      flex:1;
+      font-size:.78rem;
+      padding:6px 8px;
+      border-radius:999px;
+      border:none;
+      background:transparent;
+      color:var(--muted);
+      cursor:pointer;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:4px;
+      transition:background var(--transition-fast),color var(--transition-fast),transform var(--transition-fast),box-shadow var(--transition-fast)
+    }
+    .mode-tab span.dot{
+      width:7px;
+      height:7px;
+      border-radius:999px;
+      background:transparent;
+      border:1px solid rgba(148,163,184,.7);
+      transition:background var(--transition-fast),border-color var(--transition-fast)
+    }
+    .mode-tab.active{
+      background:var(--accent-soft);
+      color:var(--accent);
+      transform:translateY(-1px);
+      box-shadow:0 8px 16px rgba(34,197,94,.25)
+    }
+    .mode-tab.active span.dot{
+      background:var(--accent);
+      border-color:rgba(34,197,94,.9)
+    }
+
+    .form-grid{display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:10px}
+    .field{display:flex;flex-direction:column;gap:5px}
+    .field-label-row{display:flex;justify-content:space-between;align-items:center;gap:6px}
+    .field label{font-size:.8rem;font-weight:500;color:#e2e8f0}
+    .hint{font-size:.7rem;color:var(--muted)}
+    .input-shell{position:relative}
+    .input-shell input,
+    .input-shell select{
+      width:100%;
+      padding:10px 11px;
+      padding-right:72px;
+      border-radius:var(--radius-md);
+      border:1px solid var(--border);
+      background:rgba(15,23,42,.9);
+      color:var(--text);
+      font-size:.9rem;
+      outline:none;
+      transition:border-color var(--transition-fast),box-shadow var(--transition-fast),background var(--transition-fast),transform var(--transition-fast)
+    }
+    .input-shell input::placeholder{color:#4b5563}
+    .input-shell input:focus,
+    .input-shell select:focus{
+      border-color:rgba(34,197,94,.8);
+      box-shadow:0 0 0 1px rgba(34,197,94,.7);
+      background:rgba(15,23,42,1);
+      transform:translateY(-1px)
+    }
+    .input-unit{
+      position:absolute;
+      inset-block:1px;
+      right:1px;
+      width:64px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      font-size:.75rem;
+      color:var(--muted);
+      border-radius:0 var(--radius-md) var(--radius-md) 0;
+      background:linear-gradient(90deg,rgba(15,23,42,.9),rgba(15,23,42,1));
+      border-left:1px solid rgba(15,23,42,.9);
+      pointer-events:none
+    }
+    .field-error{
+      min-height:16px;
+      font-size:.7rem;
+      color:var(--accent-danger);
+      margin-top:-1px
+    }
+
+    .time-type-row,
+    .emi-type-row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-bottom:4px
+    }
+    .chip{
+      position:relative;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background:rgba(15,23,42,.9);
+      font-size:.74rem;
+      color:var(--muted);
+      cursor:pointer;
+      transition:border-color var(--transition-fast),background var(--transition-fast),color var(--transition-fast),transform var(--transition-fast)
+    }
+    .chip input{display:none}
+    .chip span.dot{
+      width:8px;
+      height:8px;
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,.7);
+      background:transparent;
+      transition:background var(--transition-fast),border-color var(--transition-fast)
+    }
+    .chip.active{
+      border-color:rgba(34,197,94,.9);
+      background:var(--accent-soft);
+      color:var(--accent);
+      transform:translateY(-1px)
+    }
+    .chip.active span.dot{
+      background:var(--accent);
+      border-color:rgba(34,197,94,.9)
+    }
+
+    .actions-row{display:flex;gap:8px;margin-top:2px;margin-bottom:10px}
+    .btn{
+      flex:1;
+      padding:10px 12px;
+      border-radius:var(--radius-md);
+      border:none;
+      cursor:pointer;
+      font-size:.9rem;
+      font-weight:500;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
+      transition:background var(--transition-fast),transform var(--transition-fast),box-shadow var(--transition-fast),color var(--transition-fast),border-color var(--transition-fast);
+      outline:none
+    }
+    .btn-primary{
+      background:linear-gradient(135deg,#22c55e,#16a34a);
+      color:#022c22;
+      box-shadow:0 12px 24px rgba(22,163,74,.45)
+    }
+    .btn-primary:hover{
+      transform:translateY(-1px);
+      box-shadow:0 16px 32px rgba(22,163,74,.55);
+      filter:brightness(1.05)
+    }
+    .btn-primary:active{
+      transform:translateY(0);
+      box-shadow:0 10px 18px rgba(22,163,74,.5);
+      filter:brightness(.97)
+    }
+    .btn-secondary{
+      background:transparent;
+      color:var(--muted);
+      border:1px solid rgba(148,163,184,.5)
+    }
+    .btn-secondary:hover{
+      border-color:rgba(148,163,184,.9);
+      color:#e5e7eb;
+      background:rgba(15,23,42,.9);
+      transform:translateY(-1px)
+    }
+    .btn-secondary:active{transform:translateY(0)}
+
+    .result-card{
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid rgba(34,197,94,.5);
+      background:radial-gradient(circle at top left,rgba(34,197,94,.18),transparent 60%);
+      display:grid;
+      grid-template-columns:1.4fr 1.2fr;
+      gap:10px;
+      align-items:center
+    }
+    .result-main{display:flex;flex-direction:column;gap:4px}
+    .result-label{font-size:.75rem;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+    .result-value{font-size:1.25rem;font-weight:650;color:#bbf7d0}
+    .result-meta{font-size:.76rem;color:#d1fae5}
+    .result-summary{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+      padding-left:10px;
+      border-left:1px dashed rgba(148,163,184,.5)
+    }
+    .summary-row{display:flex;justify-content:space-between;font-size:.75rem;color:#e5e7eb}
+    .summary-row span.key{color:var(--muted)}
+    .summary-row span.value{font-weight:500}
+    .badge{display:inline-flex;align-items:center;gap:4px;font-size:.7rem;color:var(--accent);margin-top:2px}
+    .badge-dot{width:6px;height:6px;border-radius:999px;background:var(--accent)}
+
+    .toast{
+      position:fixed;
+      left:50%;
+      bottom:18px;
+      transform:translateX(-50%) translateY(120%);
+      padding:9px 12px;
+      border-radius:999px;
+      background:rgba(15,23,42,.95);
+      border:1px solid rgba(248,113,113,.7);
+      color:#fecaca;
+      font-size:.78rem;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      opacity:0;
+      pointer-events:none;
+      transition:transform .25s ease,opacity .25s ease;
+      z-index:50
+    }
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
+    .toast-icon{
+      width:14px;
+      height:14px;
+      border-radius:999px;
+      border:1px solid #fecaca;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      font-size:.62rem
+    }
+
+    @media (max-width:480px){
+      .calculator-card{padding:16px 14px 14px}
+      .title{font-size:1.15rem}
+      .subtitle{font-size:.74rem}
+      .pill{display:none}
+      .result-card{grid-template-columns:1fr}
+      .result-summary{
+        border-left:none;
+        border-top:1px dashed rgba(148,163,184,.5);
+        padding-left:0;
+        padding-top:8px
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-wrapper">
+    <div class="calculator-card">
+      <div class="card-inner">
+        <div class="card-header">
+          <div class="title-group">
+            <div class="title">
+              Smart
+              <span class="highlight">Finance</span>
+              Toolkit
+            </div>
+            <p class="subtitle" id="mode-subtitle">
+              Simple interest · clean and instant results.
+            </p>
+          </div>
+          <div class="pill">SI · CI · EMI</div>
+        </div>
+
+        <!-- mode switch -->
+        <div class="mode-tabs" id="mode-tabs">
+          <button class="mode-tab active" data-mode="si">
+            <span class="dot"></span>
+            Simple Interest
+          </button>
+          <button class="mode-tab" data-mode="ci">
+            <span class="dot"></span>
+            Compound
+          </button>
+          <button class="mode-tab" data-mode="emi">
+            <span class="dot"></span>
+            EMI (Bike/Car)
+          </button>
+        </div>
+
+        <!-- FORM -->
+        <form id="calc-form" novalidate>
+          <div class="form-grid" id="form-fields">
+            <!-- fields injected by JS to keep UI consistent between modes -->
+          </div>
+
+          <div class="actions-row">
+            <button type="button" class="btn btn-primary" id="calculate-btn">
+              Calculate
+            </button>
+            <button type="button" class="btn btn-secondary" id="reset-btn">
+              Reset
+            </button>
+          </div>
+        </form>
+
+        <!-- RESULT -->
+        <div class="result-card" id="result-card">
+          <div class="result-main">
+            <div class="result-label" id="result-label">Simple interest</div>
+            <div class="result-value" id="result-main-value">₹0.00</div>
+            <div class="result-meta" id="result-meta">
+              Choose a mode, fill the fields and tap Calculate.
+            </div>
+            <div class="badge" id="badge">
+              <span class="badge-dot"></span>
+              <span id="badge-text">Formula: P × R × T / 100</span>
+            </div>
+          </div>
+          <div class="result-summary">
+            <div class="summary-row">
+              <span class="key" id="s1-key">Principal</span>
+              <span class="value" id="s1-val">₹0.00</span>
+            </div>
+            <div class="summary-row">
+              <span class="key" id="s2-key">Total amount</span>
+              <span class="value" id="s2-val">₹0.00</span>
+            </div>
+            <div class="summary-row">
+              <span class="key" id="s3-key">Time</span>
+              <span class="value" id="s3-val">0 yrs</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast">
+    <div class="toast-icon">!</div>
+    <span id="toast-text">Please enter valid values.</span>
+  </div>
+
+  <script>
+    const modeTabs = document.getElementById("mode-tabs");
+    const formFields = document.getElementById("form-fields");
+    const calculateBtn = document.getElementById("calculate-btn");
+    const resetBtn = document.getElementById("reset-btn");
+    const modeSubtitle = document.getElementById("mode-subtitle");
+
+    const resultLabel = document.getElementById("result-label");
+    const resultMainValue = document.getElementById("result-main-value");
+    const resultMeta = document.getElementById("result-meta");
+    const s1Key = document.getElementById("s1-key");
+    const s2Key = document.getElementById("s2-key");
+    const s3Key = document.getElementById("s3-key");
+    const s1Val = document.getElementById("s1-val");
+    const s2Val = document.getElementById("s2-val");
+    const s3Val = document.getElementById("s3-val");
+    const badgeText = document.getElementById("badge-text");
+
+    const toast = document.getElementById("toast");
+    const toastText = document.getElementById("toast-text");
+
+    let currentMode = "si"; // si | ci | emi
+
+    function showToast(message) {
+      toastText.textContent = message;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 2500);
+    }
+
+    function renderFields() {
+      if (currentMode === "si") {
+        modeSubtitle.textContent =
+          "Simple interest · clean and instant results.";
+        formFields.innerHTML = `
+          <div class="field">
+            <div class="field-label-row">
+              <label for="principal">Principal amount</label>
+              <span class="hint">Money you invest/borrow</span>
+            </div>
+            <div class="input-shell">
+              <input type="number" id="principal" placeholder="Enter amount e.g. 5000" min="0" step="0.01" required />
+              <span class="input-unit">₹</span>
+            </div>
+            <div class="field-error" data-error-for="principal"></div>
+          </div>
+
+          <div class="field">
+            <div class="field-label-row">
+              <label for="rate">Rate of interest</label>
+              <span class="hint">% per year</span>
+            </div>
+            <div class="input-shell">
+              <input type="number" id="rate" placeholder="Enter rate e.g. 7.5" min="0" max="100" step="0.01" required />
+              <span class="input-unit">% p.a.</span>
+            </div>
+            <div class="field-error" data-error-for="rate"></div>
+          </div>
+
+          <div class="field">
+            <div class="field-label-row">
+              <label for="time">Time period</label>
+              <span class="hint">Duration for which amount is kept</span>
+            </div>
+            <div class="time-type-row" id="time-type-row">
+              <label class="chip active">
+                <input type="radio" name="time-type" value="years" checked />
+                <span class="dot"></span>
+                Years
+              </label>
+              <label class="chip">
+                <input type="radio" name="time-type" value="months" />
+                <span class="dot"></span>
+                Months (auto-convert)
+              </label>
+            </div>
+            <div class="input-shell">
+              <input type="number" id="time" placeholder="Enter time e.g. 3" min="0" step="0.01" required />
+              <span class="input-unit" id="time-unit-label">yrs</span>
+            </div>
+            <div class="field-error" data-error-for="time"></div>
+          </div>
+        `;
+        resultLabel.textContent = "Simple interest";
+        badgeText.textContent = "Formula: P × R × T / 100";
+        s1Key.textContent = "Principal";
+        s2Key.textContent = "Total amount";
+        s3Key.textContent = "Time";
+      } else if (currentMode === "ci") {
+        modeSubtitle.textContent =
+          "Compound interest with yearly or monthly compounding.";
+        formFields.innerHTML = `
+          <div class="field">
+            <div class="field-label-row">
+              <label for="principal">Principal amount</label>
+              <span class="hint">Initial investment</span>
+            </div>
+            <div class="input-shell">
+              <input type="number" id="principal" placeholder="Enter amount e.g. 10000" min="0" step="0.01" required />
+              <span class="input-unit">₹</span>
+            </div>
+            <div class="field-error" data-error-for="principal"></div>
+          </div>
+
+          <div class="field">
+            <div class="field-label-row">
+              <label for="rate">Rate of interest</label>
+              <span class="hint">% per year</span>
+            </div>
+            <div class="input-shell">
+              <input type="number" id="rate" placeholder="Enter rate e.g. 10" min="0" max="100" step="0.01" required />
+              <span class="input-unit">% p.a.</span>
+            </div>
+            <div class="field-error" data-error-for="rate"></div>
+          </div>
+
+          <div class="field">
+            <div class="field-label-row">
+              <label for="time">Time period (years)</label>
+              <span class="hint">Investment duration</span>
+            </div>
+            <div class="input-shell">
+              <input type="number" id="time" placeholder="Enter time e.g. 5" min="0" step="0.01" required />
+              <span class="input-unit">yrs</span>
+            </div>
+            <div class="field-error" data-error-for="time"></div>
+          </div>
+
+          <div class="field">
+            <div class="field-label-row">
+              <label for="frequency">Compounding frequency</label>
+              <span class="hint">How often interest is added</span>
+            </div>
+            <div class="input-shell">
+              <select id="frequency">
+                <option value="1">Yearly</option>
+                <option value="4">Quarterly</option>
+                <option value="12">Monthly</option>
+              </select>
+              <span class="input-unit">per yr</span>
+            </div>
+            <div class="field-error" data-error-for="frequency"></div>
+          </div>
+        `;
+        resultLabel.textContent = "Compound interest";
+        badgeText.textContent = "Formula: A = P(1 + r/n)^(n·t)";
+        s1Key.textContent = "Principal";
+        s2Key.textContent = "Maturity amount";
+        s3Key.textContent = "Interest earned";
+      } else {
+        modeSubtitle.textContent =
+          "Bike and car EMI with monthly payments.";
+        formFields.innerHTML = `
+          <div class="field">
+            <div class="field-label-row">
+              <label>Loan type</label>
+              <span class="hint">Two-wheeler or car</span>
+            </div>
+            <div class="emi-type-row" id="emi-type-row">
+              <label class="chip active">
+                <input type="radio" name="emi-type" value="bike" checked />
+                <span class="dot"></span>
+                Two-wheeler
+              </label>
+              <label class="chip">
+                <input type="radio" name="emi-type" value="car" />
+                <span class="dot"></span>
+                Car
+              </label>
+            </div>
+            <div class="field-error" data-error-for="emi-type"></div>
+          </div>
+
+          <div class="field">
+            <div class="field-label-row">
+              <label for="loan">Loan amount</label>
+              <span class="hint">On-road price - down payment</span>
+            </div>
+            <div class="input-shell">
+              <input type="number" id="loan" placeholder="Enter loan amount e.g. 150000" min="0" step="0.01" required />
+              <span class="input-unit">₹</span>
+            </div>
+            <div class="field-error" data-error-for="loan"></div>
+          </div>
+
+          <div class="field">
+            <div class="field-label-row">
+              <label for="rate">Interest rate</label>
+              <span class="hint">% per year</span>
+            </div>
+            <div class="input-shell">
+              <input type="number" id="rate" placeholder="Enter rate e.g. 9.5" min="0" max="100" step="0.01" required />
+              <span class="input-unit">% p.a.</span>
+            </div>
+            <div class="field-error" data-error-for="rate"></div>
+          </div>
+
+          <div class="field">
+            <div class="field-label-row">
+              <label for="months">Tenure (months)</label>
+              <span class="hint">Duration of loan</span>
+            </div>
+            <div class="input-shell">
+              <input type="number" id="months" placeholder="Enter months e.g. 36" min="1" step="1" required />
+              <span class="input-unit">months</span>
+            </div>
+            <div class="field-error" data-error-for="months"></div>
+          </div>
+        `;
+        resultLabel.textContent = "Monthly EMI";
+        badgeText.textContent = "Formula: EMI = P·r·(1+r)^n / ((1+r)^n−1)";
+        s1Key.textContent = "EMI / month";
+        s2Key.textContent = "Total payment";
+        s3Key.textContent = "Total interest";
+      }
+
+      attachDynamicHandlers();
+      resetResult();
+    }
+
+    function resetResult() {
+      resultMainValue.textContent = "₹0.00";
+      if (currentMode === "si") {
+        resultMeta.textContent =
+          "Fill the fields and tap Calculate to see simple interest.";
+        s1Val.textContent = "₹0.00";
+        s2Val.textContent = "₹0.00";
+        s3Val.textContent = "0 yrs";
+      } else if (currentMode === "ci") {
+        resultMeta.textContent =
+          "Fill the fields and tap Calculate to see compound growth.";
+        s1Val.textContent = "₹0.00";
+        s2Val.textContent = "₹0.00";
+        s3Val.textContent = "₹0.00";
+      } else {
+        resultMeta.textContent =
+          "Enter loan details to view EMI, total payment and interest.";
+        s1Val.textContent = "₹0.00";
+        s2Val.textContent = "₹0.00";
+        s3Val.textContent = "₹0.00";
+      }
+    }
+
+    function clearErrors() {
+      document
+        .querySelectorAll(".field-error")
+        .forEach((el) => (el.textContent = ""));
+    }
+
+    function setError(id, message) {
+      const el = document.querySelector(`.field-error[data-error-for="${id}"]`);
+      if (el) el.textContent = message;
+    }
+
+    function calculate() {
+      clearErrors();
+      if (currentMode === "si") {
+        const p = parseFloat(document.getElementById("principal").value);
+        const r = parseFloat(document.getElementById("rate").value);
+        const t = parseFloat(document.getElementById("time").value);
+        const timeType = document.querySelector(
+          'input[name="time-type"]:checked'
+        )?.value;
+
+        let valid = true;
+        if (isNaN(p) || p <= 0) {
+          setError("principal", "Enter a positive principal.");
+          valid = false;
+        }
+        if (isNaN(r) || r <= 0 || r > 100) {
+          setError("rate", "Rate must be between 0 and 100.");
+          valid = false;
+        }
+        if (isNaN(t) || t <= 0) {
+          setError("time", "Enter valid time.");
+          valid = false;
+        }
+        if (!valid) {
+          showToast("Please fix the highlighted fields.");
+          return;
+        }
+
+        let timeYears = t;
+        let timeLabel;
+        if (timeType === "months") {
+          timeYears = t / 12;
+          timeLabel = `${t} months (${timeYears.toFixed(2)} yrs)`;
+        } else {
+          timeLabel = `${t} yrs`;
+        }
+
+        const interest = (p * r * timeYears) / 100;
+        const total = p + interest;
+
+        resultMainValue.textContent = `₹${interest.toFixed(2)}`;
+        resultMeta.textContent = `You will earn ₹${interest
+          .toFixed(2)
+          .toLocaleString("en-IN")} as interest at ${r.toFixed(
+          2
+        )}% p.a. over ${timeLabel}.`;
+        s1Val.textContent = `₹${p.toFixed(2).toLocaleString("en-IN")}`;
+        s2Val.textContent = `₹${total.toFixed(2).toLocaleString("en-IN")}`;
+        s3Val.textContent = timeLabel;
+      } else if (currentMode === "ci") {
+        const p = parseFloat(document.getElementById("principal").value);
+        const r = parseFloat(document.getElementById("rate").value);
+        const t = parseFloat(document.getElementById("time").value);
+        const n = parseInt(document.getElementById("frequency").value, 10);
+
+        let valid = true;
+        if (isNaN(p) || p <= 0) {
+          setError("principal", "Enter a positive principal.");
+          valid = false;
+        }
+        if (isNaN(r) || r <= 0 || r > 100) {
+          setError("rate", "Rate must be between 0 and 100.");
+          valid = false;
+        }
+        if (isNaN(t) || t <= 0) {
+          setError("time", "Enter valid years.");
+          valid = false;
+        }
+        if (!valid) {
+          showToast("Please fix the highlighted fields.");
+          return;
+        }
+
+        const ratePerPeriod = r / 100 / n;
+        const periods = n * t;
+        const amount = p * Math.pow(1 + ratePerPeriod, periods);
+        const interest = amount - p;
+
+        resultMainValue.textContent = `₹${amount.toFixed(2)}`;
+        resultMeta.textContent = `Your investment grows to ₹${amount
+          .toFixed(2)
+          .toLocaleString(
+            "en-IN"
+          )}, earning ₹${interest.toFixed(2).toLocaleString(
+          "en-IN"
+        )} over ${t.toFixed(2)} years.`;
+        s1Val.textContent = `₹${p.toFixed(2).toLocaleString("en-IN")}`;
+        s2Val.textContent = `₹${amount.toFixed(2).toLocaleString("en-IN")}`;
+        s3Val.textContent = `₹${interest.toFixed(2).toLocaleString("en-IN")}`;
+      } else {
+        const loan = parseFloat(document.getElementById("loan").value);
+        const r = parseFloat(document.getElementById("rate").value);
+        const months = parseInt(document.getElementById("months").value, 10);
+        const emiType = document.querySelector(
+          'input[name="emi-type"]:checked'
+        )?.value;
+
+        let valid = true;
+        if (!emiType) {
+          setError("emi-type", "Select loan type.");
+          valid = false;
+        }
+        if (isNaN(loan) || loan <= 0) {
+          setError("loan", "Enter loan amount.");
+          valid = false;
+        }
+        if (isNaN(r) || r < 0 || r > 100) {
+          setError("rate", "Rate must be between 0 and 100.");
+          valid = false;
+        }
+        if (isNaN(months) || months <= 0) {
+          setError("months", "Enter valid months.");
+          valid = false;
+        }
+        if (!valid) {
+          showToast("Please fix the highlighted fields.");
+          return;
+        }
+
+        const monthlyRate = r / 12 / 100;
+        let emi;
+        if (monthlyRate === 0) {
+          emi = loan / months;
+        } else {
+          const factor = Math.pow(1 + monthlyRate, months);
+          emi = (loan * monthlyRate * factor) / (factor - 1);
+        }
+        const totalPay = emi * months;
+        const totalInterest = totalPay - loan;
+
+        const label =
+          emiType === "bike" ? "Two-wheeler EMI" : "Car EMI";
+
+        resultLabel.textContent = `${label} (monthly)`;
+        resultMainValue.textContent = `₹${emi.toFixed(2)}`;
+        resultMeta.textContent = `Pay ₹${emi
+          .toFixed(2)
+          .toLocaleString(
+            "en-IN"
+          )} per month for ${months} months. Total payment ₹${totalPay
+          .toFixed(2)
+          .toLocaleString(
+            "en-IN"
+          )}, interest ₹${totalInterest
+          .toFixed(2)
+          .toLocaleString("en-IN")}.`;
+        s1Val.textContent = `₹${emi.toFixed(2).toLocaleString("en-IN")}`;
+        s2Val.textContent = `₹${totalPay.toFixed(2).toLocaleString("en-IN")}`;
+        s3Val.textContent = `₹${totalInterest
+          .toFixed(2)
+          .toLocaleString("en-IN")}`;
+      }
+    }
+
+    function resetForm() {
+      clearErrors();
+      document.getElementById("calc-form").reset();
+      // restore default chips for each mode
+      if (currentMode === "si") {
+        const row = document.getElementById("time-type-row");
+        if (row) {
+          row
+            .querySelectorAll(".chip")
+            .forEach((chip) => chip.classList.remove("active"));
+          const first = row.querySelector(".chip");
+          if (first) first.classList.add("active");
+        }
+        const lbl = document.getElementById("time-unit-label");
+        if (lbl) lbl.textContent = "yrs";
+      } else if (currentMode === "emi") {
+        const row = document.getElementById("emi-type-row");
+        if (row) {
+          row
+            .querySelectorAll(".chip")
+            .forEach((chip) => chip.classList.remove("active"));
+          const first = row.querySelector(".chip");
+          if (first) first.classList.add("active");
+        }
+      }
+      resetResult();
+    }
+
+    function attachDynamicHandlers() {
+      // time-type chips
+      const timeTypeRow = document.getElementById("time-type-row");
+      if (timeTypeRow) {
+        const timeUnitLabel = document.getElementById("time-unit-label");
+        timeTypeRow.addEventListener("click", (e) => {
+          const chip = e.target.closest(".chip");
+          if (!chip) return;
+          timeTypeRow
+            .querySelectorAll(".chip")
+            .forEach((c) => c.classList.remove("active"));
+          chip.classList.add("active");
+          const input = chip.querySelector("input");
+          if (input && timeUnitLabel) {
+            input.checked = true;
+            timeUnitLabel.textContent =
+              input.value === "years" ? "yrs" : "mnths";
+          }
+        });
+      }
+
+      // emi type chips
+      const emiTypeRow = document.getElementById("emi-type-row");
+      if (emiTypeRow) {
+        emiTypeRow.addEventListener("click", (e) => {
+          const chip = e.target.closest(".chip");
+          if (!chip) return;
+          emiTypeRow
+            .querySelectorAll(".chip")
+            .forEach((c) => c.classList.remove("active"));
+          chip.classList.add("active");
+          const input = chip.querySelector("input");
+          if (input) input.checked = true;
+        });
+      }
+
+      // basic input: clear individual errors on input
+      formFields
+        .querySelectorAll("input, select")
+        .forEach((el) => {
+          el.addEventListener("input", () => {
+            const name = el.id || el.name;
+            if (!name) return;
+            const err = document.querySelector(
+              `.field-error[data-error-for="${name}"]`
+            );
+            if (err) err.textContent = "";
+          });
+
+          el.addEventListener("keyup", (e) => {
+            if (e.key === "Enter") calculate();
+          });
+        });
+    }
+
+    modeTabs.addEventListener("click", (e) => {
+      const btn = e.target.closest(".mode-tab");
+      if (!btn) return;
+      const mode = btn.getAttribute("data-mode");
+      if (mode === currentMode) return;
+      modeTabs
+        .querySelectorAll(".mode-tab")
+        .forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      currentMode = mode;
+      renderFields();
+    });
+
+    calculateBtn.addEventListener("click", calculate);
+    resetBtn.addEventListener("click", resetForm);
+
+    // initial render
+    renderFields();
+  </script>
+</body>
+</html>
